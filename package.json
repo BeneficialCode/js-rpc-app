@@ -1,0 +1,20 @@
+{
+  "name": "js-rpc-app",
+  "version": "1.0.0",
+  "description": "JavaScript RPC Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "VirtualCC",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^33.2.1"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "jsencrypt": "^3.3.2",
+    "ws": "^8.18.0"
+  }
+}

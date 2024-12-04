@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <title>Hello from Electron renderer!</title>
+</head>
+
+<body>
+  Title: <input id="title" />
+  <button id="btn" type="button">Set</button>
+  <p>👋</p>
+  <p id="info"></p>
+  <button type="button" id="fileBtn">Open a File</button>
+  File path: <strong id="filePath"></strong>
+  <p>Current value: <strong id="counter">0</strong></p>
+</body>
+<script src="./renderer.js"></script>
+
+</html>
