@@ -1,6 +1,12 @@
-const {app,BrowserWindow, ipcMain,dialog,Menu} = require('electron');
+const {app,BrowserWindow, ipcMain,dialog,Menu, globalShortcut} = require('electron');
 const path = require('node:path')
 const WebSocket = require('ws')
+
+// 在全局范围内声明一个变量来存储主窗口的引用
+let mainWindow;
+
+// 声明一个全局变量来存储 WebSocket 客户端
+let rpcClient;
 
 // 回调函数
 async function handleFileOpen () {
@@ -19,11 +25,16 @@ function handleSetTitle(event,title) {
 }
 
 const createWindow = () => {
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences:{
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            devTools: true,
+            nodeIntegration: true,
+            contextIsolation: true,
+            webSecurity: true,
+            allowRunningInsecureContent: false
         }
     });
 
@@ -51,17 +62,29 @@ const createWindow = () => {
     ])
     Menu.setApplicationMenu(menu)
 
+    // 打开开发者工具
+    mainWindow.webContents.openDevTools();
+    
     // win.loadURL('https://login.189.cn/login')
     mainWindow.loadFile('index.html')
-
     
+    //mainWindow.loadURL('https://passport.vivo.com.cn/#/login')
 }
 
 app.whenReady().then(() => {
     ipcMain.handle('dialog:openFile', handleFileOpen)
     createWindow()
 
-    
+    // 注册全局快捷键
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+        const win = BrowserWindow.getFocusedWindow();
+        if (win) {
+            win.webContents.toggleDevTools();
+        }
+    });
+
+    // 在主窗口创建后创建 WebSocket 客户端
+    rpcClient = new Hlclient("ws://127.0.0.1:12080/ws?group=rpc&clientId=VirtualCC/"+new Date().getTime());
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -70,25 +93,49 @@ app.whenReady().then(() => {
     })
 })
 
+// 当应用退出时，取消注册所有快捷键
+app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
     }
 })
 
-
-
 function Hlclient(wsURL) {
   this.wsURL = wsURL;
   this.handlers = {
       _execjs: function (resolve, param) {
-          var res = eval(param)
-          if (!res) {
-              resolve("没有返回值")
+          // 使用全局存储的主窗口引用，而不是 getFocusedWindow
+          if (mainWindow && !mainWindow.isDestroyed()) {
+              // 通过 IPC 发送到渲染进程执行
+              mainWindow.webContents.send('execute-javascript', param);
+              
+              // 设置超时，防止永久等待
+              const timeoutId = setTimeout(() => {
+                  // 移除监听器，避免内存泄漏
+                  ipcMain.removeAllListeners('execute-javascript-result');
+                  resolve({ error: "执行超时，可能是无法序列化的结果或执行时间过长" });
+              }, 5000); // 5秒超时
+              
+              // 设置一次性监听器来接收结果
+              ipcMain.once('execute-javascript-result', (_event, result) => {
+                  // 清除超时
+                  clearTimeout(timeoutId);
+                  
+                  if (result && result.error) {
+                      resolve({ error: result.error });
+                  } else if (!result) {
+                      resolve("没有返回值");
+                  } else {
+                      resolve(result);
+                  }
+              });
           } else {
-              resolve(res)
+              resolve({ error: "没有可用的窗口来执行 JavaScript" });
           }
-
       }
   };
   this.socket = undefined;
@@ -194,8 +241,6 @@ Hlclient.prototype.sendResult = function (action, message_id, e) {
   }
   this.send(JSON.stringify({"action": action, "message_id": message_id, "response_data": e}));
 }
-
-var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=rpc&clientId=VirtualCC/"+new Date().getTime())
 
 
 

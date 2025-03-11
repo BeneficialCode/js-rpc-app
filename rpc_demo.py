@@ -9,7 +9,6 @@ call_str = '''
 encryptAES("123456")'''
 
 code += call_str
-import requests
 
 
 url = "http://localhost:12080/execjs"
@@ -19,3 +18,5 @@ data = {
 }
 res = requests.post(url, data=data)
 print(res.text)
+
+
