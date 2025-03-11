@@ -195,7 +195,7 @@ Hlclient.prototype.sendResult = function (action, message_id, e) {
   this.send(JSON.stringify({"action": action, "message_id": message_id, "response_data": e}));
 }
 
-var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&clientId=hliang/"+new Date().getTime())
+var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=rpc&clientId=VirtualCC/"+new Date().getTime())
 
 
 
