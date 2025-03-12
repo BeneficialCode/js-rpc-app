@@ -1,5 +1,13 @@
 const { contextBridge,ipcRenderer } = require('electron')
+const JSEncrypt = require("jsencrypt")
 
+contextBridge.exposeInMainWorld("JSEncrypt", {
+    encrypt: (message, publicKey) => {
+        const encryptor = new JSEncrypt();
+        encryptor.setPublicKey(publicKey);
+        return encryptor.encrypt(message);
+    }
+});
 
 /*
 默认情况下，渲染器进程没有权限访问 Node.js 和 Electron 模块。 作为应用开发者，需要使用 contextBridge API 来选择要从预加载脚本中暴露哪些 API

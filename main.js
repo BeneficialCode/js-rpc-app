@@ -2,6 +2,8 @@ const {app,BrowserWindow, ipcMain,dialog,Menu, globalShortcut} = require('electr
 const path = require('node:path')
 const WebSocket = require('ws')
 
+
+
 // 在全局范围内声明一个变量来存储主窗口的引用
 let mainWindow;
 
@@ -108,31 +110,52 @@ function Hlclient(wsURL) {
   this.wsURL = wsURL;
   this.handlers = {
       _execjs: function (resolve, param) {
-          // 使用全局存储的主窗口引用，而不是 getFocusedWindow
+          // 使用全局存储的主窗口引用
           if (mainWindow && !mainWindow.isDestroyed()) {
-              // 通过 IPC 发送到渲染进程执行
-              mainWindow.webContents.send('execute-javascript', param);
-              
-              // 设置超时，防止永久等待
-              const timeoutId = setTimeout(() => {
-                  // 移除监听器，避免内存泄漏
-                  ipcMain.removeAllListeners('execute-javascript-result');
-                  resolve({ error: "执行超时，可能是无法序列化的结果或执行时间过长" });
-              }, 5000); // 5秒超时
-              
-              // 设置一次性监听器来接收结果
-              ipcMain.once('execute-javascript-result', (_event, result) => {
-                  // 清除超时
-                  clearTimeout(timeoutId);
-                  
-                  if (result && result.error) {
-                      resolve({ error: result.error });
-                  } else if (!result) {
-                      resolve("没有返回值");
-                  } else {
-                      resolve(result);
-                  }
-              });
+              // 使用 webContents.executeJavaScript 在 DevTools 控制台的上下文中执行代码
+              // 这样可以访问到 DevTools 环境中的所有对象，包括 window._dx
+              mainWindow.webContents.executeJavaScript(param)
+                  .then(result => {
+                      console.log('DevTools 执行结果:', result);
+                      
+                      // 处理结果，确保它可以被序列化
+                      try {
+                          // 尝试序列化结果
+                          JSON.stringify(result);
+                          resolve(result);
+                      } catch (serializeError) {
+                          console.warn('结果无法序列化:', serializeError);
+                          
+                          // 返回一个可序列化的对象
+                          if (result === undefined) {
+                              resolve({ value: 'undefined' });
+                          } else if (result === null) {
+                              resolve({ value: 'null' });
+                          } else if (typeof result === 'function') {
+                              resolve({ value: '[Function]', type: 'function' });
+                          } else if (typeof result === 'object') {
+                              // 对于对象，尝试提取可序列化的属性
+                              const safeResult = {};
+                              for (const key in result) {
+                                  try {
+                                      const value = result[key];
+                                      // 检查属性值是否可序列化
+                                      JSON.stringify(value);
+                                      safeResult[key] = value;
+                                  } catch (e) {
+                                      safeResult[key] = `[Unserializable: ${typeof value}]`;
+                                  }
+                              }
+                              resolve(safeResult);
+                          } else {
+                              resolve({ value: String(result), type: typeof result });
+                          }
+                      }
+                  })
+                  .catch(error => {
+                      console.error('DevTools 执行出错:', error);
+                      resolve({ error: error.message });
+                  });
           } else {
               resolve({ error: "没有可用的窗口来执行 JavaScript" });
           }
