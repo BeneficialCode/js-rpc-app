@@ -15,7 +15,10 @@ import rsa
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
 import binascii
-
+import urllib.parse
+import cv2
+import numpy as np
+import hashlib
 
 def decrypt_aes(encrypted_base64, aes_key_hex, aes_iv_hex):
     """
@@ -65,20 +68,21 @@ def encrypt_aes(plaintext, aes_key_hex, aes_iv_hex):
     encrypted_base64 = base64.b64encode(encrypted_data).decode('utf-8')
     return encrypted_base64
 
+session = requests.session()
+
 # Example usage
 encrypted_base64 = 'pi8qylupzSpl7TcVUO/mDteUAyht/2wn3CAVtfWhdTDOrqN0fbt/5I01DZylZ8dNB4EtpCSg2xEcl48IGe/KxA=='
-aes_key_hex = '38613032663534626563383837353035'
+aes_key_hex = '63346135363163366634653461643237'
 aes_iv_hex = '31362d42797465732d2d537472696e67'
 
-plaintext = decrypt_aes(encrypted_base64, aes_key_hex, aes_iv_hex)
-print(plaintext)
+# plaintext = decrypt_aes(encrypted_base64, aes_key_hex, aes_iv_hex)
+# print(plaintext)
 
+plaintext = 'sliderVersionType=2&constID=CID%3A1741832695857&imei=&randomNum=8ad51235cccbe1d7&phone=18483517021&areaCode=86&ticket=1958D51B011DD070B0B9B78C05D6B44E4405C81964A72E6379B0E%3A67cff457cSxVESQs6l2MFTEgVbLK7jo5EuHvFx91&client_id=131&countryCode=CN&deviceType=pc&timeStamp=1741832695858&nounce=88abd8330b0cc5558c10bc258f99a9597b1ae960a2552ac5a8e8eb93d603b532&locale=zh_CN&authcookie=1&e=3&msminv=25012200'
 encrypted_base64 = encrypt_aes(plaintext, aes_key_hex, aes_iv_hex)
-print(encrypted_base64)
-
-
-
-
+encrypted_data = base64.b64decode(encrypted_base64)
+encData = encrypted_data.hex()
+print(encData)
 
 
 prefix = "dx-"
@@ -89,11 +93,20 @@ random_number_2 = str(random.randrange(1000000, 10000000))
 
 result = prefix + random_number_1 + "-" + random_number_2 + suffix
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36',
+  'Accept': '*/*',
+  'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+  'Connection': 'keep-alive',
+  'Origin': 'https://passport.vivo.com.cn',
+  'Referer': 'https://passport.vivo.com.cn/',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-site',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+  'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'Cookie': 'vivo_account_cookie_iqoo_deviceid=wb_df91d702-0a10-4756-a6a0-e9c044096592'
 }
-
-# ?w=315&h=150&s=50&ak=dd070b0b9ba2ffa81d655c0f492ef2e0&c=67d00270rJSOBsYbshD5jBXkevqUakFuxRwjiGB1&jsv=1.3.41.439&aid=dx-1741750144180-5376685-2&
-# wp=1&de=0&uid=&lf=0&tpc=&isDark=false&_r=0.39247413367079376
 
 params = (
     ('w', '288'),
@@ -114,7 +127,7 @@ params = (
 )
 
 # https://captcha.vivo.com.cn/api/a
-response = requests.get('https://captcha.vivo.com.cn/api/a', headers=headers, params=params).json()
+response = session.get('https://captcha.vivo.com.cn/api/a', headers=headers, params=params).json()
 o = response["o"]
 sid=response["sid"]
 url = response["p1"]
@@ -141,8 +154,8 @@ json_data = res.json()
 arr = json_data['data']
 arr = eval(arr)
 
-p1_img = requests.get(p1_url)
-p2_img = requests.get(p2_url)
+p1_img = session.get(p1_url)
+p2_img = session.get(p2_url)
 
 p1_img_data = BytesIO(p1_img.content)
 
@@ -181,12 +194,14 @@ data['code'] = code
 res = requests.post(url, data=data)
 print(res.text)
 
+time.sleep(3)
+
 code = '''
-    let input = document.querySelector('input[placeholder="请输入手机号"]');
+    var input = document.querySelector('input[placeholder="请输入手机号"]');
     if (input) {
         input.value = "13800138000";
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        let btn = document.querySelector('.get-code-pc .get');
+        var btn = document.querySelector('.get-code-pc .get');
         if (btn) {
             btn.click();
         }
@@ -209,6 +224,23 @@ res = requests.post(url, data=data)
 json_data = res.json()
 ac = json_data['data']
 
+headers = {
+  'Accept': '*/*',
+  'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+  'Connection': 'keep-alive',
+  'Content-type': 'application/x-www-form-urlencoded',
+  'Origin': 'https://passport.vivo.com.cn',
+  'Referer': 'https://passport.vivo.com.cn/',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-site',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+  'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'Cookie': 'vivo_account_cookie_iqoo_deviceid=wb_df91d702-0a10-4756-a6a0-e9c044096592'
+}
+
 url = "https://captcha.vivo.com.cn/api/v1"
 data = {
     "ac": ac,
@@ -220,38 +252,9 @@ data = {
     "x":x,
     "y":y
 }
-response = requests.post(url, data=data)
+response = session.post(url, data=data,headers=headers)
+print(response.text)
 token = response.json()['token']
-
-
-
-
-data = {
-    'phone': '17381560710',
-    'areaCode': '86',
-    'ticket': '',
-    'randomNum':'',
-    'client_id': '131',
-    '_isSafe_': 'true',
-    'sliderVersionType': '2',
-    'clientType':'2',
-    'countryCode': 'CN',
-    'deviceType':'wap',
-    "timeStamp": str(int(time.time() * 1000)),  # 当前时间戳（毫秒
-    "nounce": "1421048d1a0071d89d3bca6b1e8067a3de7861b3bde7c11ded45116938696685",
-    "locale": "zh_CN",
-    "authcookie": "3",
-    'e':3,
-    'msminv':'25012200',
-    "ticket": f"{token}:67cff457cSxVESQs6l2MFTEgVbLK7jo5EuHvFx91",
-    'constID':'CID:1741766337746',
-}
-
-query_string = urlencode(data)
-cipher_text = encrypt_aes(query_string, aes_key_hex, aes_iv_hex)
-encrypted_data = base64.b64decode(cipher_text)
-encData = encrypted_data.hex()
-
 
 url = "http://localhost:12080/execjs"
 aes_key = bytes.fromhex(aes_key_hex).decode("utf-8")
@@ -264,12 +267,117 @@ data = {
 }
 res = requests.post(url, data=data)
 encKey = res.json()['data']
+encKey = urllib.parse.quote(encKey)
 
-payload = f"encData={encData}&encKey={encKey}&encVer=1_1_3"
+cid = str(int(time.time() * 1000))
+timeStamp = str(int(time.time() * 1000))
+nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
+
+data = {
+    'phone': '15701353872',
+    'areaCode': '86',
+    'ticket': '',
+    'randomNum': '',
+    'client_id': '',
+    '_isSafe_': 'true',
+    'sliderVersionType': '2',
+    'clientType': '2',
+    'countryCode': 'CN',
+    'deviceType': 'pc',
+    'timeStamp': timeStamp,
+    'nounce': '808c7b4da0c575ba5b180834ef7b496b97c85249ee231859af733d8a17afb173',
+    'locale': 'zh_CN',
+    'authcookie': '1',
+    'e': '3',
+    'msminv': '25012200'
+}
+
+query_string = urlencode(data)
+cipher_text = encrypt_aes(query_string, aes_key_hex, aes_iv_hex)
+encrypted_data = base64.b64decode(cipher_text)
+encData = encrypted_data.hex()
+
+payload = f"encData={encData}&encKey={encKey}&encVer=1_1_2"
+
+url = "https://passport.vivo.com.cn/v5/smsLogin/p1"
+response = session.post(url, data=payload, headers=headers)
+cipher_text = response.text[4:]
+cipher_text = bytes.fromhex(cipher_text)
+cipher_text_b64 = base64.b64encode(cipher_text)
+plaintext = decrypt_aes(cipher_text_b64, aes_key_hex, aes_iv_hex)
+
+json_data = json.loads(plaintext)
+randomNum = json_data['data']['randomNum']
+
+
+cid = str(int(time.time() * 1000))
+timeStamp = str(int(time.time() * 1000))
+nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
+
+
+data = {
+    'phone': '15701353872',
+    'areaCode': '86',
+    'randomNum':randomNum,
+    'client_id': '131',
+    'sliderVersionType': '2',
+    'countryCode': 'CN',
+    'deviceType':'pc',
+    'constID':f'CID:{cid}',
+    "timeStamp": timeStamp,  # 当前时间戳（毫秒
+    "nounce": nounce,
+    "locale": "zh_CN",
+    "authcookie": "1",
+    'e':3,
+    'msminv':'25012200',
+    "ticket": f"{token}:67cff457cSxVESQs6l2MFTEgVbLK7jo5EuHvFx91",
+}
+
+query_string = urlencode(data)
+cipher_text = encrypt_aes(query_string, aes_key_hex, aes_iv_hex)
+encrypted_data = base64.b64decode(cipher_text)
+encData = encrypted_data.hex()
+
+
+
+payload = f"encData={encData}&encKey={encKey}&encVer=1_1_2"
 
 url = 'https://passport.vivo.com.cn/v5/smsLogin/p1'
-res = requests.post(url, data=data, headers=headers)
+
+
+
+headers = {
+  'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8;',
+}
+
+headers = {
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+  'Connection': 'keep-alive',
+  'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8;',
+  'Origin': 'https://passport.vivo.com.cn',
+  'Referer': 'https://passport.vivo.com.cn/',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-origin',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+  'X-Requested-With': 'XMLHttpRequest',
+  'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'Cookie': 'vivo_account_cookie_iqoo_deviceid=wb_df91d702-0a10-4756-a6a0-e9c044096592'
+}
+res = session.post(url, data=payload, headers=headers)
 print(res.text)
+cipher_text = res.text[4:]
+cipher_text = bytes.fromhex(cipher_text)
+cipher_text_b64 = base64.b64encode(cipher_text)
+plaintext = decrypt_aes(cipher_text_b64, aes_key_hex, aes_iv_hex)
+print(plaintext)
+
+
+
+
 
 
 
