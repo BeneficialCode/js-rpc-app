@@ -224,6 +224,18 @@ res = requests.post(url, data=data)
 json_data = res.json()
 ac = json_data['data']
 
+
+js_code = '''
+    window.localStorage.getItem("smDeviceId")
+'''
+url = "http://localhost:12080/execjs"
+data = {
+    "group": "rpc",
+    "code": js_code
+}
+res = requests.post(url, data=data)
+smDeviceId = res.json()['data']
+
 headers = {
   'Accept': '*/*',
   'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
@@ -274,7 +286,7 @@ timeStamp = str(int(time.time() * 1000))
 nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
 
 data = {
-    'phone': '15701353872',
+    'phone': '18483517020',
     'areaCode': '86',
     'ticket': '',
     'randomNum': '',
@@ -316,7 +328,7 @@ nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
 
 
 data = {
-    'phone': '15701353872',
+    'phone': '18483517020',
     'areaCode': '86',
     'randomNum':randomNum,
     'client_id': '131',
@@ -377,6 +389,63 @@ print(plaintext)
 
 
 
+# do login
+code = input('请输入验证码：')
+timeStamp = str(int(time.time() * 1000))
+nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
+
+
+
+data = {
+    "phone": "18483517020",
+    "areaCode": "86",
+    "code": code,
+    "remember": "0",
+    "client_id": "131",
+    "redirect_uri": "https://pc.vivo.com.cn/suite?origin=cloudWeb",
+    "alreadySendCode": "1",
+    "bizCode": "BC0063",
+    "supportReplay": "1",
+    "smDeviceId": smDeviceId,
+    "countryCode": "CN",
+    "deviceType": "pc",
+    "timeStamp": timeStamp,
+    "nounce": nounce,
+    "locale": "zh_CN",
+    "authcookie": "1",
+    "e": "3",
+    "msminv": "25012200"
+}
+
+query_string = urlencode(data)
+cipher_text = encrypt_aes(query_string, aes_key_hex, aes_iv_hex)
+encrypted_data = base64.b64decode(cipher_text)
+encData = encrypted_data.hex()
+
+url = "https://passport.vivo.com.cn/v5/smsLogin/p2"
+
+payload = f"encData={encData}&encKey={encKey}&encVer=1_1_2"
+
+response = session.post(url, data=payload, headers=headers)
+print(response.text)
+cipher_text = response.text[4:]
+cipher_text = bytes.fromhex(cipher_text)
+cipher_text_b64 = base64.b64encode(cipher_text)
+plaintext = decrypt_aes(cipher_text_b64, aes_key_hex, aes_iv_hex)
+print(plaintext)
+
+url = 'https://passport.vivo.com.cn/v3/web/login/authorize?client_id=9&redirect_uri=https://webcloud.vivo.com.cn/login&response_type=code&page_type=0'
+response = session.get(url, headers=headers)
+redirect_url = response.headers.get('Location')
+response = session.get(redirect_url, headers=headers)
+
+url = f'https://webcloud.vivo.com.cn/queryaccount?_t={int(time.time() * 1000)}'
+response = session.get(url, headers=headers)
+print(response.text)
+
+url = f'https://webcloud.vivo.com.cn/secondCheck/checkIfTrustDevice?from=findphone&_t={int(time.time() * 1000)}'
+response = session.get(url, headers=headers)
+print(response.text)
 
 
 
