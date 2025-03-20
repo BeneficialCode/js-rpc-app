@@ -132,7 +132,7 @@ real_array.append((real_x, real_y))
 
 
 for i in range(len(xy_array)):
-    x = xy_array[i][0]/400*315
-    y = xy_array[i][1]/200*150
-    print(f"真实值: {real_array[i]},识别值:({xy_array[i][0]},{xy_array[i][1]}) 预测值：({x}, {y})")
+    x = int(xy_array[i][0]/400*315)
+    y = int(xy_array[i][1]/200*150)
+    print(f"真实值: {real_array[i]},识别值:({xy_array[i][0]},{xy_array[i][1]}) 调整值：({x}, {y})")
 
