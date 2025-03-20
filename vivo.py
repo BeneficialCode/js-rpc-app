@@ -113,7 +113,7 @@ params = (
     ('h', '144'),
     ('s', '50'),
     ('ak', 'dd070b0b9ba2ffa81d655c0f492ef2e0'),
-    ('c', '67d00270rJSOBsYbshD5jBXkevqUakFuxRwjiGB1'),
+    ('c', '67daaa2ctfMAnLmPi4AnfJggylnO3AWiL0AVQVp1'),
     ('jsv', '1.3.41.439'),
     ('aid', result),
     ('wp', '1'),
@@ -257,10 +257,10 @@ url = "https://captcha.vivo.com.cn/api/v1"
 data = {
     "ac": ac,
     "ak": "dd070b0b9ba2ffa81d655c0f492ef2e0",
-    "c": "67cff457cSxVESQs6l2MFTEgVbLK7jo5EuHvFx91",
+    "c": "67daaa2ctfMAnLmPi4AnfJggylnO3AWiL0AVQVp1",
     "jsv": "1.3.41.439",
     "sid": sid,
-    "aid": "dx-1741767808896-99701937-2",
+    "aid": "dx-1742387315262-98706112-1",
     "x":x,
     "y":y
 }
@@ -434,10 +434,6 @@ cipher_text_b64 = base64.b64encode(cipher_text)
 plaintext = decrypt_aes(cipher_text_b64, aes_key_hex, aes_iv_hex)
 print(plaintext)
 
-url = 'https://passport.vivo.com.cn/v3/web/login/authorize?client_id=9&redirect_uri=https://webcloud.vivo.com.cn/login&response_type=code&page_type=0'
-response = session.get(url, headers=headers)
-redirect_url = response.headers.get('Location')
-response = session.get(redirect_url, headers=headers)
 
 url = f'https://webcloud.vivo.com.cn/queryaccount?_t={int(time.time() * 1000)}'
 response = session.get(url, headers=headers)
