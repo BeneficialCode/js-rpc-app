@@ -433,7 +433,35 @@ cipher_text = bytes.fromhex(cipher_text)
 cipher_text_b64 = base64.b64encode(cipher_text)
 plaintext = decrypt_aes(cipher_text_b64, aes_key_hex, aes_iv_hex)
 print(plaintext)
+'''
+{"bd":{"openid":"c852de8a8a9f993f"},"code":0,"data":{"openid":"c852de8a8a9f993f","regionCode":"CN","userId":732983655},"extendInfo":{"multiDomain":[{"domain":"//passport.iqoo.com","reqPath":"//passport.iqoo.com/v5/setSession","ticket":"5264fdfb6a8256f4"},{"domain":"//passport.vbaoxian-cib.com","reqPath":"//passport.vbaoxian-cib.com/v5/setSession","ticket":"2a07a4be33f17fda"},{"domain":"//passport.vivo.com","reqPath":"//passport.vivo.com/v5/setSession","ticket":"bb24248361e0a976"}],"openid":"c852de8a8a9f993f","vivoToken":"b333a55192fdc96db94837e80508a8eb.1742440490519"},"msg":"处理成功"}
+'''
+json_data = json.loads(plaintext)
+ticket = json_data['extendInfo']['multiDomain'][0]['ticket']
+url = 'https://passport.iqoo.com/v5/setSession'
+timeStamp = str(int(time.time() * 1000))
+nounce = hashlib.md5(timeStamp.encode('utf-8')).hexdigest()
+payload = {
+  'ticket': ticket,
+  'countryCode': "CN",
+  'deviceType': "pc",
+  'timeStamp': timeStamp,
+  'nounce': nounce,
+  'locale': "zh_CN",
+  'authcookie': "1",
+  'e': "3",
+  'msminv': "25012200"
+}
+response = session.post(url, data=payload, headers=headers)
+print(response.text)
 
+url = "https://passport.vivo.com.cn/v3/web/login/authorize"
+response = requests.get(url, headers=headers)
+if response.status_code == 302:
+    redirect_url = response.headers['Location']
+    print(f"Redirect URL: {redirect_url}")
+    response = requests.get(redirect_url, headers=headers)
+    print(response.text)
 
 url = f'https://webcloud.vivo.com.cn/queryaccount?_t={int(time.time() * 1000)}'
 response = session.get(url, headers=headers)
