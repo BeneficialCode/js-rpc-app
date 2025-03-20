@@ -85,6 +85,58 @@ encData = encrypted_data.hex()
 print(encData)
 
 
+code = '''
+    window.location.href = "https://passport.vivo.com.cn/#/login";
+'''
+data = {
+    "group": "rpc",
+    "code": code
+}
+url = "http://localhost:12080/execjs"
+res = requests.post(url, data=data)
+print(res.text)
+
+time.sleep(3)
+
+code = '''
+    var input = document.querySelector('input[placeholder="请输入手机号"]');
+    if (input) {
+        input.value = "13800138000";
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        var btn = document.querySelector('.get-code-pc .get');
+        if (btn) {
+            btn.click();
+        }
+    }
+'''
+data['code'] = code
+res = requests.post(url, data=data)
+print(res.text)
+
+code = '''
+    document.cookie
+'''
+url = "http://localhost:12080/execjs"
+data = {
+    "group": "rpc",
+    "code": code
+}
+res = requests.post(url, data=data)
+json_data = res.json()
+cookie_str = json_data['data']
+ak = 'dd070b0b9ba2ffa81d655c0f492ef2e0'
+cookie_key = f'_dx_app_{ak}'
+
+def get_cookie_value(cookie_str, key):
+    cookies = cookie_str.split("; ")
+    for cookie in cookies:
+        k, v = cookie.split("=", 1)  # 只分割一次，避免值中有 "=" 导致错误
+        if k == key:
+            return v
+    return None
+
+cookie_value = get_cookie_value(cookie_str, cookie_key)
+
 prefix = "dx-"
 suffix = "-1"
 
@@ -112,8 +164,8 @@ params = (
     ('w', '288'),
     ('h', '144'),
     ('s', '50'),
-    ('ak', 'dd070b0b9ba2ffa81d655c0f492ef2e0'),
-    ('c', '67daaa2ctfMAnLmPi4AnfJggylnO3AWiL0AVQVp1'),
+    ('ak', ak),
+    ('c', cookie_value),
     ('jsv', '1.3.41.439'),
     ('aid', result),
     ('wp', '1'),
@@ -187,31 +239,6 @@ x = res["target"][0]
 
 x = int(x/400*288)
 
-code = '''
-    window.location.href = "https://passport.vivo.com.cn/#/login";
-'''
-data['code'] = code
-res = requests.post(url, data=data)
-print(res.text)
-
-time.sleep(3)
-
-code = '''
-    var input = document.querySelector('input[placeholder="请输入手机号"]');
-    if (input) {
-        input.value = "13800138000";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        var btn = document.querySelector('.get-code-pc .get');
-        if (btn) {
-            btn.click();
-        }
-    }
-'''
-data['code'] = code
-res = requests.post(url, data=data)
-print(res.text)
-
-
 with open('ac.js','r',encoding='utf-8') as f:
     code = f.read()
 
@@ -256,8 +283,8 @@ headers = {
 url = "https://captcha.vivo.com.cn/api/v1"
 data = {
     "ac": ac,
-    "ak": "dd070b0b9ba2ffa81d655c0f492ef2e0",
-    "c": "67daaa2ctfMAnLmPi4AnfJggylnO3AWiL0AVQVp1",
+    "ak": ak,
+    "c": cookie_value,
     "jsv": "1.3.41.439",
     "sid": sid,
     "aid": "dx-1742387315262-98706112-1",
@@ -297,7 +324,7 @@ data = {
     'countryCode': 'CN',
     'deviceType': 'pc',
     'timeStamp': timeStamp,
-    'nounce': '808c7b4da0c575ba5b180834ef7b496b97c85249ee231859af733d8a17afb173',
+    'nounce': nounce,
     'locale': 'zh_CN',
     'authcookie': '1',
     'e': '3',
